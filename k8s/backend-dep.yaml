@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vproapp
+  labels:
+    app: vproapp
+spec:
+  selector:
+    matchLabels:
+      app: vproapp
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vproapp
+    spec:
+      initContainers:
+      - name: init-mydb
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w 2 vprodb 3306; do echo waiting for mydb; sleep 2; done;']
+      - name: init-memcache
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w 2 vpromc 11211; do echo waiting for memcache; sleep 2; done;']
+      - name: init-rabbitmq
+        image: busybox
+        command: ['sh', '-c', 'until nc -z -v -w 2 vpromq 5672; do echo waiting for rabbitmq; sleep 2; done;']
+      containers:
+      - name: vproapp
+        image: vprofile-app:v1
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_HOST
+          value: vprodb
+        - name: DB_NAME
+          value: accounts
+        - name: DB_USER
+          value: root
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vpro-db-pass
+              key: db-pass
+        - name: MEMCACHED_HOST
+          value: vpromc
+        - name: RABBITMQ_HOST
+          value: vpromq
+        - name: RABBITMQ_USER
+          value: guest
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vpro-db-pass
+              key: rmq-pass
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vproapp
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: vproapp
