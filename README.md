@@ -5,6 +5,7 @@ A multi-tier Java web application deployed on Kubernetes using Minikube. This pr
 ## 📋 Table of Contents
 
 - [Architecture](#architecture)
+- [Screenshots](#screenshots)
 - [Technologies](#technologies)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
@@ -35,6 +36,45 @@ The application follows a multi-tier architecture deployed on Kubernetes:
 └─────┘ │ched │ └────────┘ └──────┘
         └─────┘
 ```
+
+### Container Details
+
+| Container | Base Image | Internal Port | Purpose |
+|-----------|------------|---------------|---------|
+| vprofile-app | maven:3.8-jdk-8 → tomcat:8-jre8 | 8080 | Multi-stage build: Maven build + Tomcat runtime |
+| vprofile-nginx | nginx:latest | 80 | Reverse proxy and load balancer |
+| mysql | mysql:5.7 | 3306 | Relational database |
+| memcached | memcached:1.6 | 11211 | In-memory cache |
+| rabbitmq | rabbitmq:3-management | 5672, 15672 | Message broker (AMQP + Management UI) |
+
+### Port Mappings
+
+**Kubernetes Service → Container Ports:**
+- `vpronginx:80` → `nginx:80` → `vproapp:8080` (HTTP traffic flow)
+- `vprodb:3306` → `mysql:3306` (Database connections)
+- `vpromc:11211` → `memcached:11211` (Cache connections)
+- `vpromq:5672` → `rabbitmq:5672` (AMQP protocol)
+- `vpromq:15672` → `rabbitmq:15672` (RabbitMQ Management UI)
+
+**External Access:**
+- Port forwarding: `localhost:80` → `vpronginx:80` → `vproapp:8080`
+
+## 📸 Screenshots
+
+### Application Login Page
+![Login Page](screenshots/login-page.png)
+
+### User Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### User Registration
+![Registration](screenshots/registration.png)
+
+### Kubernetes Deployment
+![Kubernetes Pods](screenshots/kubectl-pods.png)
+
+### Services Running
+![Kubernetes Services](screenshots/kubectl-services.png)
 
 ## 🛠️ Technologies
 
@@ -282,6 +322,14 @@ kubectl exec <vprodb-pod-name> -- mysql -uroot -pvprodbpass accounts < /tmp/db_b
 - All sensitive credentials are stored in Kubernetes secrets
 - The Nginx proxy handles SSL termination and load balancing
 - Minikube LoadBalancer services remain in `<pending>` state (expected behavior)
+### 1. login page
+![login page](screenshots/login.png)
+
+### 1. dashboard page
+![dashboard page](screenshots/dashboard.png)
+
+### 1. L8S
+![K8S](screenshots/k8s.png)
 
 ## 📄 License
 
